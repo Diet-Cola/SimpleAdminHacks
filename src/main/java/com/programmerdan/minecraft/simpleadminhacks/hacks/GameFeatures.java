@@ -596,9 +596,10 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 			return false;
 		}
 		if (!TeleportUtil.checkForTeleportSpace(target.getRelative(BlockFace.UP).getLocation())) {
-			checkForAnchors(source, false);
+			checkForAnchors(target, false);
 			return false;
 		}
+		checkForAnchors(target, false);
 		Location adjustedLocation = target.getLocation().clone();
 		adjustedLocation.add(0.5, 1.02, 0.5);
 		adjustedLocation.setYaw(player.getLocation().getYaw());
@@ -609,13 +610,14 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 
 	private static void checkForAnchors(Block anchor, boolean skipLevel) {
 		List<Block> blocks = new LinkedList<>();
-		World world = anchor.getWorld();
 		//Here we're scanning each y level for respawn anchors to add them to the list
 		for (int y = 0; y <= 255; y++) {
-			if (skipLevel && y == anchor.getY()) {
-				y++;
+			if (skipLevel) {
+				if (anchor.getY() == y) {
+					y++;
+				}
 			}
-			Block anblock = world.getBlockAt(anchor.getX(), y, anchor.getZ());
+			Block anblock = anchor.getWorld().getBlockAt(anchor.getX(), y, anchor.getZ());
 			if (anblock.getType() == Material.RESPAWN_ANCHOR) {
 				blocks.add(anblock);
 			}
@@ -625,11 +627,11 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 			setAnchorCharges(blocks.get(0), 0);
 			return;
 		}
-		for (Block b : blocks) {
-			if (TeleportUtil.checkForTeleportSpace(b.getRelative(BlockFace.UP).getLocation())) {
-				setAnchorCharges(b, 4);
+		for (Block block : blocks) {
+			if (TeleportUtil.checkForTeleportSpace(block.getRelative(BlockFace.UP).getLocation())) {
+				setAnchorCharges(block, 4);
 			} else {
-				setAnchorCharges(b, 0);
+				setAnchorCharges(block, 0);
 			}
 		}
 	}
