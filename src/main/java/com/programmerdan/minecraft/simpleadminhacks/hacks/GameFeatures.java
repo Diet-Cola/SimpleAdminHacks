@@ -1,6 +1,7 @@
 package com.programmerdan.minecraft.simpleadminhacks.hacks;
 
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -9,10 +10,12 @@ import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Dispenser;
+import org.bukkit.block.data.type.RespawnAnchor;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -24,6 +27,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -297,7 +301,12 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 
 	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void disableEnderChestPlacement(BlockPlaceEvent event) {
-		if (!config.isEnabled()) return;
+		if (!config.isEnabled()) {
+			return;
+		}
+		if (event.getBlockPlaced().getType() == Material.RESPAWN_ANCHOR) {
+			checkForAnchors(event.getBlockPlaced(), false);
+		}
 		if (!config.isEnderChestPlacement()) {
 			if (Material.ENDER_CHEST.equals(event.getBlock().getType())) {
 				event.setCancelled(true);
@@ -536,9 +545,20 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 		dead.sendMessage(ChatColor.RED + String.format("You were slain by %s at [%s %d, %d, %d]",
 				killer, loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
 	}
-	
+
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onBlockBreak(BlockBreakEvent event) {
+		if (event.getBlock().getType() == Material.RESPAWN_ANCHOR) {
+			checkForAnchors(event.getBlock(), true);
+		}
+	}
+
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-	public void hitGoldBlock(PlayerInteractEvent event) {
+	public void hitAnchorTp(PlayerInteractEvent event) {
+		if (!config.isEnabled() || !config.isAnchorblockTeleport()) {
+			return;
+		}
+
 		if (event.getAction() != Action.LEFT_CLICK_BLOCK) {
 			return;
 		}
@@ -546,35 +566,37 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 		if (block == null) {
 			return;
 		}
-		if (block.getType() != Material.GOLD_BLOCK) {
+		if (block.getType() != Material.RESPAWN_ANCHOR) {
 			return;
 		}
 		if (event.getPlayer().isSneaking()) {
 			return;
 		}
 		//require player to stand on block
-		if (!event.getPlayer().getLocation().getBlock().getLocation().equals(block.getRelative(BlockFace.UP).getLocation())) {
+		if (!event.getPlayer().getLocation().getBlock().getLocation()
+				.equals(block.getRelative(BlockFace.UP).getLocation())) {
 			return;
 		}
-		for(int y = block.getY() + 1; y <= 255; y++) {
+		for (int y = block.getY() + 1; y <= 255; y++) {
 			if (doTeleport(block, event.getPlayer(), y)) {
 				return;
 			}
 		}
-		for(int y = 0; y < block.getY(); y++) {
+		for (int y = 0; y < block.getY(); y++) {
 			if (doTeleport(block, event.getPlayer(), y)) {
 				return;
 			}
 		}
 		event.getPlayer().sendMessage(ChatColor.RED + "No suitable destination was found");
 	}
-	
+
 	private static boolean doTeleport(Block source, Player player, int y) {
 		Block target = source.getWorld().getBlockAt(source.getX(), y, source.getZ());
-		if (target.getType() != Material.GOLD_BLOCK) {
+		if (target.getType() != Material.RESPAWN_ANCHOR) {
 			return false;
 		}
 		if (!TeleportUtil.checkForTeleportSpace(target.getRelative(BlockFace.UP).getLocation())) {
+			checkForAnchors(source, false);
 			return false;
 		}
 		Location adjustedLocation = target.getLocation().clone();
@@ -583,5 +605,44 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 		adjustedLocation.setPitch(player.getLocation().getPitch());
 		player.teleport(adjustedLocation);
 		return true;
+	}
+
+	private static void checkForAnchors(Block anchor, boolean skipLevel) {
+		List<Block> blocks = new LinkedList<>();
+		World world = anchor.getWorld();
+		//Here we're scanning each y level for respawn anchors to add them to the list
+		for (int y = 0; y <= 255; y++) {
+			if (skipLevel && y == anchor.getY()) {
+				y++;
+			}
+			Block anblock = world.getBlockAt(anchor.getX(), y, anchor.getZ());
+			if (anblock.getType() == Material.RESPAWN_ANCHOR) {
+				blocks.add(anblock);
+			}
+		}
+		//No other anchors? ok back out
+		if (blocks.size() == 1) {
+			setAnchorCharges(blocks.get(0), 0);
+			return;
+		}
+		for (Block b : blocks) {
+			if (TeleportUtil.checkForTeleportSpace(b.getRelative(BlockFace.UP).getLocation())) {
+				setAnchorCharges(b, 4);
+			} else {
+				setAnchorCharges(b, 0);
+			}
+		}
+	}
+
+	private static void setAnchorCharges(Block anchorBlock, int level) {
+		if (anchorBlock.getType() != Material.RESPAWN_ANCHOR) {
+			throw new IllegalArgumentException("Block is not a Respawn Anchor");
+		}
+		if (level < 0 || level > 4) {
+			throw new IndexOutOfBoundsException("Can only be between 0-4");
+		}
+		RespawnAnchor anchor = (RespawnAnchor) anchorBlock.getBlockData();
+		anchor.setCharges(level);
+		anchorBlock.setBlockData(anchor);
 	}
 }

@@ -34,7 +34,7 @@ public class GameFeaturesConfig extends SimpleHackConfig {
 	private boolean obsidianGenerators;
 	private boolean personalDeathMessages;
 	
-	private boolean goldBlockTeleport;
+	private boolean anchorBlockTeleport;
 
 	public GameFeaturesConfig(SimpleAdminHacks plugin, ConfigurationSection base) {
 		super(plugin, base);
@@ -97,8 +97,8 @@ public class GameFeaturesConfig extends SimpleHackConfig {
 		this.personalDeathMessages = config.getBoolean("personalDeathMessages", false);
 		if (this.personalDeathMessages) plugin().log("  Personal death messages enabled.");
 		
-		this.goldBlockTeleport = config.getBoolean("goldBlockTeleport", false);
-		if (this.personalDeathMessages) plugin().log("  Gold block teleporter enabled.");
+		this.anchorBlockTeleport = config.getBoolean("anchorBlockTeleport", false);
+		if (this.personalDeathMessages) plugin().log("  Anchor block teleporter enabled.");
 
 		/* Add additional feature config grabs here. */
 	}
@@ -178,8 +178,8 @@ public class GameFeaturesConfig extends SimpleHackConfig {
 		return this.personalDeathMessages;
 	}
 	
-	public boolean isGoldblockTeleport() {
-		return goldBlockTeleport;
+	public boolean isAnchorblockTeleport() {
+		return anchorBlockTeleport;
 	}
 
 }
