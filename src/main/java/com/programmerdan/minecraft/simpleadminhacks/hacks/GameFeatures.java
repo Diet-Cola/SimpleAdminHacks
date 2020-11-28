@@ -553,13 +553,13 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
 	public void hitAnchorTp(PlayerInteractEvent event) {
 		if (!config.isEnabled() || !config.isAnchorblockTeleport()) {
 			return;
 		}
 
-		if (event.getAction() != Action.LEFT_CLICK_BLOCK) {
+		if (event.getAction() != Action.LEFT_CLICK_BLOCK && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
 			return;
 		}
 		Block block = event.getClickedBlock();
@@ -578,12 +578,12 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 			return;
 		}
 		for (int y = block.getY() + 1; y <= 255; y++) {
-			if (doTeleport(block, event.getPlayer(), y)) {
+			if (event.getAction() == Action.RIGHT_CLICK_BLOCK && doTeleport(block, event.getPlayer(), y)) {
 				return;
 			}
 		}
-		for (int y = 0; y < block.getY(); y++) {
-			if (doTeleport(block, event.getPlayer(), y)) {
+		for (int y = block.getY() - 1; y >= 0; y--) {
+			if (event.getAction() == Action.LEFT_CLICK_BLOCK && doTeleport(block, event.getPlayer(), y)) {
 				return;
 			}
 		}
@@ -612,14 +612,15 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 		List<Block> blocks = new LinkedList<>();
 		//Here we're scanning each y level for respawn anchors to add them to the list
 		for (int y = 0; y <= 255; y++) {
-			if (skipLevel) {
-				if (anchor.getY() == y) {
-					y++;
-				}
+			if (skipLevel && anchor.getY() == y) {
+				continue;
 			}
 			Block anblock = anchor.getWorld().getBlockAt(anchor.getX(), y, anchor.getZ());
-			if (anblock.getType() == Material.RESPAWN_ANCHOR) {
+			if (anblock.getType() == Material.RESPAWN_ANCHOR &&
+					TeleportUtil.checkForTeleportSpace(anblock.getRelative(BlockFace.UP).getLocation())) {
 				blocks.add(anblock);
+			} else if (anblock.getType() == Material.RESPAWN_ANCHOR) {
+				setAnchorCharges(anblock, 0);
 			}
 		}
 		//No other anchors? ok back out
@@ -628,11 +629,7 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 			return;
 		}
 		for (Block block : blocks) {
-			if (TeleportUtil.checkForTeleportSpace(block.getRelative(BlockFace.UP).getLocation())) {
-				setAnchorCharges(block, 4);
-			} else {
-				setAnchorCharges(block, 0);
-			}
+			setAnchorCharges(block, 4);
 		}
 	}
 
