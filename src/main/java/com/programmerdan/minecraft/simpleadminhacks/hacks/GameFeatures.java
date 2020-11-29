@@ -577,14 +577,18 @@ public class GameFeatures extends SimpleHack<GameFeaturesConfig> implements List
 				.equals(block.getRelative(BlockFace.UP).getLocation())) {
 			return;
 		}
-		for (int y = block.getY() + 1; y <= 255; y++) {
-			if (event.getAction() == Action.RIGHT_CLICK_BLOCK && doTeleport(block, event.getPlayer(), y)) {
-				return;
+		if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+			for (int y = block.getY() + 1; y <= 255; y++) {
+				if (doTeleport(block, event.getPlayer(), y)) {
+					return;
+				}
 			}
 		}
-		for (int y = block.getY() - 1; y >= 0; y--) {
-			if (event.getAction() == Action.LEFT_CLICK_BLOCK && doTeleport(block, event.getPlayer(), y)) {
-				return;
+		if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
+			for (int y = block.getY() - 1; y >= 0; y--) {
+				if (doTeleport(block, event.getPlayer(), y)) {
+					return;
+				}
 			}
 		}
 		event.getPlayer().sendMessage(ChatColor.RED + "No suitable destination was found");
