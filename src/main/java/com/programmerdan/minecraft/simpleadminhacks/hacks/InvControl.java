@@ -1,5 +1,6 @@
 package com.programmerdan.minecraft.simpleadminhacks.hacks;
 
+import com.github.maxopoly.artemis.NameAPI;
 import com.programmerdan.minecraft.simpleadminhacks.SimpleAdminHacks;
 import com.programmerdan.minecraft.simpleadminhacks.configs.InvControlConfig;
 import com.programmerdan.minecraft.simpleadminhacks.framework.SimpleHack;
@@ -25,7 +26,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import vg.civcraft.mc.namelayer.NameAPI;
 
 public class InvControl extends SimpleHack<InvControlConfig> implements CommandExecutor, Listener {
 
