@@ -48,11 +48,11 @@ public class DogFacts extends BasicHack {
 				counter = 0;
 			}
 			TextComponent messageComp = new TextComponent(ChatColor.translateAlternateColorCodes('&', announcements.get(counter)));
+			plugin.info("Broadcasting DogFact: " + messageComp.getText());
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				if (getDisableAnnouncements(player.getUniqueId())){
 					continue;
 				}
-				plugin.info("Broadcasting DogFact: " + messageComp.getText());
 				player.spigot().sendMessage(messageComp);
 			}
 			counter++;
