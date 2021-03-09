@@ -5,6 +5,7 @@ import com.programmerdan.minecraft.simpleadminhacks.configs.GameTuningConfig;
 import com.programmerdan.minecraft.simpleadminhacks.framework.SimpleHack;
 import com.programmerdan.minecraft.simpleadminhacks.framework.utilities.TeleportUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -13,6 +14,9 @@ import org.bukkit.Material;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -47,6 +51,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 import vg.civcraft.mc.civmodcore.inventory.items.ItemUtils;
 
 /**
@@ -63,7 +68,7 @@ import vg.civcraft.mc.civmodcore.inventory.items.ItemUtils;
  * - BlockEntity limits per chunk
  * - Setting bed during the day instead of just at night
  */
-public class GameTuning extends SimpleHack<GameTuningConfig> implements Listener {
+public class GameTuning extends SimpleHack<GameTuningConfig> implements CommandExecutor,Listener {
 	public static final String NAME = "GameTuning";
 
 	public GameTuning(SimpleAdminHacks plugin, GameTuningConfig config) {
@@ -85,6 +90,9 @@ public class GameTuning extends SimpleHack<GameTuningConfig> implements Listener
 
 	@Override
 	public void registerCommands() {
+		if (config.isEnabled()) {
+			plugin().registerCommand("chunklimits", this);
+		}
 	}
 
 	@Override
@@ -455,5 +463,22 @@ public class GameTuning extends SimpleHack<GameTuningConfig> implements Listener
 			event.setCancelled(true);
 			plugin().getLogger().info("Rain event was cancelled");
 		}
+	}
+
+	@Override
+	public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] strings) {
+		Map<Material, Integer> blockLimits = config.getBlockEntityLimits();
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(ChatColor.BLUE + "-- The following blocks have limits --\n");
+		sb.append("\n");
+
+		for (Map.Entry<Material, Integer> entries : blockLimits.entrySet()) {
+			Material mat = entries.getKey();
+			Integer limit = entries.getValue();
+			sb.append("" + ChatColor.BLUE + mat + " : " + limit + "\n");
+		}
+		commandSender.sendMessage(sb.toString());
+		return true;
 	}
 }
